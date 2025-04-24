@@ -12,7 +12,7 @@ from infrastructure.scraping.get_soup import GetSoup
 from settings import logger
 
 
-BASE_URL: str = "https://www.pref.ehime.jp/reddatabook2014/"
+BASE_URL: str = "https://books.toscrape.com/"
 
 
 def _get_category_data(session, url: str) -> list[Category]:
