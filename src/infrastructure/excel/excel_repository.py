@@ -2,6 +2,7 @@
 # # -*- coding: utf-8 -*-
 import pandas as pd
 
+from domain.helpers.sanitize_sheet import sanitize_sheet_name
 from domain.repositories.i_excel_repository import IExcelRepository
 from infrastructure.save_DataFrame2excel import save_df2excel
 from settings import logger
@@ -15,7 +16,7 @@ class ExcelRepository(IExcelRepository):
     def __init__(self, output_file: str) -> None:
         """
         Initialize the ExcelRepository.
-        
+
         :param output_file: The name of the output Excel file.
         """
         self._output_file = output_file
@@ -29,5 +30,6 @@ class ExcelRepository(IExcelRepository):
         :param sheet_name: The name of the sheet in the Excel file.
         :param index: Whether to include the DataFrame index in the Excel file.
         """
+        sheet_name = sanitize_sheet_name(sheet_name)
         save_df2excel(df, self._output_file, sheet_name, index)
         logger.info(f"DataFrameをエクセルファイル:{self._output_file}のシート:{sheet_name}に保存しました。")

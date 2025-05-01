@@ -14,7 +14,7 @@ def main() -> None:
     logger.info("Starting the scraping and saving process.")
 
     # Define the output file name
-    output_file = 'reddatabook2014_ehime.xlsx'
+    output_file = 'booklist_sample.xlsx'
 
     # Create an instance of ExcelRepository
     excel_repository = ExcelRepository(output_file)
@@ -27,7 +27,7 @@ def main() -> None:
 
     # Run the scraping and saving process
     scraping_service.scrape_and_save()
-    
+
     logger.info("Scraping and saving process completed.")
 
 

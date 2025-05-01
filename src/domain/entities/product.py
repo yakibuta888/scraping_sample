@@ -9,111 +9,113 @@ from domain.helpers.dataclass import DataClassBase
 
 @dataclass(frozen=True, eq=True)
 class Product(DataClassBase):
-    
+
     _id: str
-    _jp_name: str
-    _en_name: str
-    _classify: str
-    _ehime_category: str
-    _kankyo_category: str
-    _feature: str
-    _distribution: str
-    _situation: str
-    _note: str
-    _local_name: str
+    _name: str
+    _upc: str
+    _product_type: str
+    _price_excl_tax: str
+    _price_incl_tax: str
+    _tax: str
+    _availability: str
+    _number_of_reviews: str
+    _star_rating: str
+    _description: str
     _link: str
-    
+
 
     @staticmethod
     def _sanitize_name(name: str) -> str:
         return name.strip()
-    
+
+
     @classmethod
-    def new(cls, id: str, jp_name: str, en_name: str, classify: str, ehime_category: str, kankyo_category: str, feature: str, distribution: str, situation: str, note: str, local_name: str, link: str) -> Product:
+    def new(cls, id: str, name: str, upc: str, product_type: str, price_excl_tax: str, price_incl_tax: str, tax: str, availability: str, number_of_reviews: str, star_rating: str, description: str, link: str) -> Product:
         """
         Factory method to create a new Product instance.
         This method ensures that the product name is sanitized.
         """
-        
+
         # Sanitize the names
-        jp_name = cls._sanitize_name(jp_name)
-        en_name = cls._sanitize_name(en_name)
-        classify = cls._sanitize_name(classify)
-        ehime_category = cls._sanitize_name(ehime_category)
-        kankyo_category = cls._sanitize_name(kankyo_category)
-        feature = cls._sanitize_name(feature)
-        distribution = cls._sanitize_name(distribution)
-        situation = cls._sanitize_name(situation)
-        note = cls._sanitize_name(note)
-        local_name = cls._sanitize_name(local_name)
+        name = cls._sanitize_name(name)
+        upc = cls._sanitize_name(upc)
+        product_type = cls._sanitize_name(product_type)
+        price_excl_tax = cls._sanitize_name(price_excl_tax)
+        price_incl_tax = cls._sanitize_name(price_incl_tax)
+        tax = cls._sanitize_name(tax)
+        availability = cls._sanitize_name(availability)
+        number_of_reviews = cls._sanitize_name(number_of_reviews)
+        star_rating = cls._sanitize_name(star_rating)
+        description = cls._sanitize_name(description)
         link = cls._sanitize_name(link)
 
-        return cls(_id=id, _jp_name=jp_name, _en_name=en_name, _classify=classify, _ehime_category=ehime_category, _kankyo_category=kankyo_category, _feature=feature, _distribution=distribution, _situation=situation, _note=note, _local_name=local_name, _link=link)
-    
+        return cls(_id=id, _name=name, _upc=upc, _product_type=product_type, _price_excl_tax=price_excl_tax, _price_incl_tax=price_incl_tax, _tax=tax, _availability=availability, _number_of_reviews=number_of_reviews, _star_rating=star_rating, _description=description, _link=link)
+
+
     @property
     def id(self) -> str:
         return self._id
-    
+
     @property
-    def jp_name(self) -> str:
-        return self._jp_name
-    
+    def name(self) -> str:
+        return self._name
+
     @property
-    def en_name(self) -> str:
-        return self._en_name
-    
+    def upc(self) -> str:
+        return self._upc
+
     @property
-    def classify(self) -> str:
-        return self._classify
-    
+    def product_type(self) -> str:
+        return self._product_type
+
     @property
-    def ehime_category(self) -> str:
-        return self._ehime_category
-    
+    def price_excl_tax(self) -> str:
+        return self._price_excl_tax
+
     @property
-    def kankyo_category(self) -> str:
-        return self._kankyo_category
-    
+    def price_incl_tax(self) -> str:
+        return self._price_incl_tax
+
     @property
-    def feature(self) -> str:
-        return self._feature
-    
+    def tax(self) -> str:
+        return self._tax
+
     @property
-    def distribution(self) -> str:
-        return self._distribution
-    
+    def availability(self) -> str:
+        return self._availability
+
     @property
-    def situation(self) -> str:
-        return self._situation
-    
+    def number_of_reviews(self) -> str:
+        return self._number_of_reviews
+
     @property
-    def note(self) -> str:
-        return self._note
-    
+    def star_rating(self) -> str:
+        return self._star_rating
+
     @property
-    def local_name(self) -> str:
-        return self._local_name
-    
+    def description(self) -> str:
+        return self._description
+
     @property
     def link(self) -> str:
         return self._link
-    
-    def to_dict(self) -> dict:
+
+    def to_dict(self) -> dict[str, str]:
         """
         Convert the Product instance to a dictionary.
         This method is used to be transferred to the DataFrame.
         """
         return {
             "id": self.id,
-            "jp_name": self.jp_name,
-            "en_name": self.en_name,
-            "classify": self.classify,
-            "ehime_category": self.ehime_category,
-            "kankyo_category": self.kankyo_category,
-            "feature": self.feature,
-            "distribution": self.distribution,
-            "situation": self.situation,
-            "note": self.note,
-            "local_name": self.local_name,
+            "name": self.name,
+            "upc": self.upc,
+            "product_type": self.product_type,
+            "price_excl_tax": self.price_excl_tax,
+            "price_incl_tax": self.price_incl_tax,
+            "tax": self.tax,
+            "availability": self.availability,
+            "number_of_reviews": self.number_of_reviews,
+            "star_rating": self.star_rating,
+            "description": self.description,
             "link": self.link
         }

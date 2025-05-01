@@ -1,4 +1,4 @@
-def sanitize_sheet_name(name):
+def sanitize_sheet_name(name: str) -> str:
     invalid_chars = ['/', '\\', '*', '?', ':', '[', ']']
     for char in invalid_chars:
         name = name.replace(char, '')
