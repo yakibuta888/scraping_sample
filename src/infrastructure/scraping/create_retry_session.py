@@ -15,7 +15,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         return super().send(request, **kwargs)
 
 
-def create_retry_session(retries: int = 3, backoff_factor: float = 0.5, status_forcelist: tuple = (500, 502, 503, 504), timeout: int = 10) -> requests.Session:
+def create_retry_session(retries: int = 3, backoff_factor: float = 0.5, status_forcelist: tuple[int, ...] = (500, 502, 503, 504), timeout: int = 10) -> requests.Session:
     """
     Create a requests session with retry logic.
     """

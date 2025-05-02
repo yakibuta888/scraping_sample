@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import time
+from requests import Session
 from requests.exceptions import RequestException, Timeout, ConnectionError, HTTPError
 
 from bs4 import BeautifulSoup
+from bs4.element import ResultSet, Tag
 
 from settings import logger
 
@@ -13,7 +15,7 @@ class GetSoup:
     """
     Class to handle the creation of a BeautifulSoup object from a URL.
     """
-    def __init__(self, url: str, session, timeout: int = 10):
+    def __init__(self, url: str, session: Session, timeout: int = 10):
         """
         Get the BeautifulSoup object from the URL.
         """
@@ -40,9 +42,9 @@ class GetSoup:
         except Exception as e:
             logger.error(f"An unexpected error occurred. @get_soup {local_url}: {e}", exc_info=True)
             raise e
-        
-    
-    def select(self, selectors: list[str]) -> list:
+
+
+    def select(self, selectors: list[str]) -> ResultSet[Tag] | list[None]:
         """
         Select elements from the soup using a CSS selector.
         """
@@ -56,8 +58,8 @@ class GetSoup:
         except Exception as e:
             logger.error(f"Error occurred while selecting elements: {e}", exc_info=True)
             return []
-        
-    
+
+
     def select_one(self, selectors: list[str]):
         """
         Select a single element from the soup using a CSS selector.

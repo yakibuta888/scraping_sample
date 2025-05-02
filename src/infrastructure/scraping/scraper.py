@@ -3,6 +3,7 @@
 import re
 
 from lxml import etree
+from requests import Session
 from typing import Generator
 
 from domain.entities.category import Category
@@ -15,19 +16,21 @@ from settings import logger
 BASE_URL: str = "https://books.toscrape.com/"
 
 
-def _get_category_data(session, url: str) -> list[Category]:
+def _get_category_data(session: Session, url: str) -> list[Category]:
     """
     Get category data from the given URL and return a list of Category objects.
     """
     try:
         soup = GetSoup(url, session, timeout=5)
-        elements = soup.select(['#search-left a'])
+        elements = soup.select(['.nav-list>li>ul>li>a'])
 
-        categories = []
+        categories: list[Category] = []
         for element in elements:
-            title = element.get('title')
+            if element is None:
+                continue
+            title = element.text.strip()
             link = element.get('href')
-            id_match = re.search(r'/group(\d+)_\d+', link)
+            id_match = re.search(r'\w+_(\d+)\/index\.html$', link)
             if title and link and id_match:
                 link = BASE_URL + link
                 category = Category.new(id=int(id_match.group(1)), name=title, link=link)
@@ -38,43 +41,48 @@ def _get_category_data(session, url: str) -> list[Category]:
     except Exception as e:
         logger.error(f"Error occurred while getting category data: {e}", exc_info=True)
         raise e
-    
 
-def _get_product_details(session, url: str) -> Product:
+
+def _get_product_details(session: Session, url: str) -> Product:
     """
     Get product details from the given URL and return a Product object.
     """
     try:
         soup = GetSoup(url, session, timeout=5)
-        match = re.search(r'detail/([\d_]+)\.html', url)
+        match = re.search(r'\w+_(\d+)\/index\.html$', url)
         id = match.group(1) if match else ''
-        jp_name = soup.select_one(['#detail-box > h2']).text.strip() # type: ignore
-        en_name = soup.select_one(['.en']).text.strip() # type: ignore
-        match = re.search(r'【\s?(.*)\s?】', soup.select_one(['.classify']).text.strip()) # type: ignore
-        classify = match.group(1) if match else ''
-        ehime_category = soup.select_one(['.ehime-ctg .ctg-txt']).text.strip() # type: ignore
-        kankyo_category = soup.select_one(['.kankyo-ctg .ctg-txt']).text.strip() # type: ignore
-        table = soup.select_one(['table'])
+        name = soup.select_one(['.product_main h1']).text.strip() # type: ignore
+
+        # Extracting Table Data
+        table = soup.select_one(['table.table'])
         dom = etree.HTML(str(table)) # type: ignore
-        feature = dom.xpath('//tr[th[contains(text(), "特徴")]]/td/text()')[0].strip()
-        distribution = dom.xpath('//tr[th[contains(text(), "分　布")]]/td/text()')[0].strip()
-        situation = dom.xpath('//tr[th[contains(text(), "生息状況")]]/td/text()')[0].strip()
-        note = dom.xpath('//tr[th[contains(text(), "特記事項")]]/td/text()')[0].strip()
-        local_name = dom.xpath('//tr[th[contains(text(), "地方名")]]/td/text()')[0].strip()
+        upc = dom.xpath('//tr[th[contains(text(), "UPC")]]/td/text()')[0].strip()
+        product_type = dom.xpath('//tr[th[contains(text(), "Product Type")]]/td/text()')[0].strip()
+        price_excl_tax = dom.xpath('//tr[th[contains(text(), "Price (excl. tax)")]]/td/text()')[0].strip()
+        price_incl_tax = dom.xpath('//tr[th[contains(text(), "Price (incl. tax)")]]/td/text()')[0].strip()
+        tax = dom.xpath('//tr[th[contains(text(), "Tax")]]/td/text()')[0].strip()
+        availability = dom.xpath('//tr[th[contains(text(), "Availability")]]/td/text()')[0].strip()
+        number_of_reviews = dom.xpath('//tr[th[contains(text(), "Number of reviews")]]/td/text()')[0].strip()
+
+        # Extracting star rating number
+        elm = soup.select_one(['.product_main p.star-rating'])
+        classes = elm.get('class', "") if elm else ""
+        star_rating = [c for c in classes if c != 'star-rating'][0] if classes else ''
+        description = soup.select_one(['#product_description']).find_next_sibling("p").text.strip() # type: ignore
         link = url
-        
+
         return Product.new(
             id=id,
-            jp_name=jp_name,
-            en_name=en_name,
-            classify=classify,
-            ehime_category=ehime_category,
-            kankyo_category=kankyo_category,
-            feature=feature,
-            distribution=distribution,
-            situation=situation,
-            note=note,
-            local_name=local_name,
+            name=name,
+            upc=upc,
+            product_type=product_type,
+            price_excl_tax=price_excl_tax,
+            price_incl_tax=price_incl_tax,
+            tax=tax,
+            availability=availability,
+            number_of_reviews=number_of_reviews,
+            star_rating=star_rating,
+            description=description,
             link=link
         )
 
@@ -82,21 +90,21 @@ def _get_product_details(session, url: str) -> Product:
         logger.error(f"Error occurred while getting product details: {e}", exc_info=True)
         return Product.new(
             id='',
-            jp_name='',
-            en_name='',
-            classify='',
-            ehime_category='',
-            kankyo_category='',
-            feature='',
-            distribution='',
-            situation='',
-            note='',
-            local_name='',
+            name='',
+            upc='',
+            product_type='',
+            price_excl_tax='',
+            price_incl_tax='',
+            tax='',
+            availability='',
+            number_of_reviews='',
+            star_rating='',
+            description='',
             link=url
         )
 
 
-def _get_product_data(session, category) -> Category:
+def _get_product_data(session: Session, category: Category) -> Category:
     """
     Get product data from the given URL and return a list of Product objects.
 
@@ -110,19 +118,22 @@ def _get_product_data(session, category) -> Category:
     try:
         url = category.link
         soup = GetSoup(url, session, timeout=5)
-        elements = soup.select(['tr:has(a)'])
+        elements = soup.select(['h3:has(a)'])
 
         for element in elements:
-            url = BASE_URL + element.select_one('a').get('href').replace('../', '')
+            detail_url = element.select_one('a').get('href').replace('../', '')
+            if type(detail_url) is not str:
+                continue
+            url = BASE_URL + "catalogue/" + detail_url
             product = _get_product_details(session, url)
             category.add_product(product)
-            
-        page_nav = soup.select_one(['.pageNav'])
+
+        page_nav = soup.select_one(['.pager'])
         dom = etree.HTML(str(page_nav)) # type: ignore
-        next_page = dom.xpath('//a[contains(text(), "次")]/@href')
-        
-        if next_page:
-            next_page_url = BASE_URL + 'group/' + next_page[0]
+        next_page = dom.xpath('//a[contains(text(), "next")]/@href')
+
+        if next_page and type(next_page) is list[str]:
+            next_page_url = category.link.replace('index.html', next_page[0])
             category.set_link(next_page_url)
             return _get_product_data(session, category)
 
@@ -131,18 +142,18 @@ def _get_product_data(session, category) -> Category:
     except Exception as e:
         logger.error(f"Error occurred while getting product data: {e}", exc_info=True)
         return category
-    
+
 
 def scrape_data() -> Generator[Category, None, None]:
     """
     Scrape data from a website and return it as a Category object.
     """
     session = create_retry_session(timeout=10)
-    
+
     try:
-        url = BASE_URL + "top.html#gsc.tab=0"
+        url = BASE_URL + "index.html"
         categories = _get_category_data(session, url)
-        
+
         for category in categories:
             logger.debug(f"Scraping category: {category.name}")
             _get_product_data(session, category)
