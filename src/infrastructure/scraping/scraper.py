@@ -166,8 +166,6 @@ def scrape_data() -> Generator[Category, None, None]:
 
         for category in categories:
             logger.debug(f"Scraping category: {category.name}")
-            if category.name == 'Philosophy':
-                break
             _get_product_data(session, category)
             yield category
 
