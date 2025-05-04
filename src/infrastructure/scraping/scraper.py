@@ -5,9 +5,11 @@ import re
 from lxml import etree
 from requests import Session
 from typing import Generator
+from urllib.parse import urljoin, urlparse, urlunparse
 
 from domain.entities.category import Category
 from domain.entities.product import Product
+from domain.helpers.safe_urljoin import safe_urljoin
 from infrastructure.scraping.create_retry_session import create_retry_session
 from infrastructure.scraping.get_soup import GetSoup
 from settings import logger
@@ -68,7 +70,10 @@ def _get_product_details(session: Session, url: str) -> Product:
         elm = soup.select_one(['.product_main p.star-rating'])
         classes = elm.get('class', "") if elm else ""
         star_rating = [c for c in classes if c != 'star-rating'][0] if classes else ''
-        description = soup.select_one(['#product_description']).find_next_sibling("p").text.strip() # type: ignore
+
+        description_element = soup.select_one(['#product_description'])
+        description = description_element.find_next_sibling("p").text.strip() if description_element else ''
+
         link = url
 
         return Product.new(
@@ -121,20 +126,25 @@ def _get_product_data(session: Session, category: Category) -> Category:
         elements = soup.select(['h3:has(a)'])
 
         for element in elements:
-            detail_url = element.select_one('a').get('href').replace('../', '')
-            if type(detail_url) is not str:
-                continue
-            url = BASE_URL + "catalogue/" + detail_url
-            product = _get_product_details(session, url)
-            category.add_product(product)
+            detail_url = element.select_one('a').get('href')
+            if detail_url and type(detail_url) is str:
+                url = safe_urljoin(category.link, detail_url)
+                product = _get_product_details(session, url)
+                category.add_product(product)
 
         page_nav = soup.select_one(['.pager'])
         dom = etree.HTML(str(page_nav)) # type: ignore
         next_page = dom.xpath('//a[contains(text(), "next")]/@href')
+        logger.debug("Next page is " + ('exist' if next_page else 'not exist'))
 
-        if next_page and type(next_page) is list[str]:
-            next_page_url = category.link.replace('index.html', next_page[0])
+        if next_page and isinstance(next_page, list) and isinstance(next_page[0], str):
+            parsed = urlparse(category.link)
+            path_segments = parsed.path.split('/')
+            path_segments[-1] = next_page[0]
+            new_path = '/'.join(path_segments)
+            next_page_url = urlunparse(parsed._replace(path=new_path))
             category.set_link(next_page_url)
+            logger.debug(f"Next page URL: {next_page_url}")
             return _get_product_data(session, category)
 
         return category
